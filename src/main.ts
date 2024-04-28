@@ -1,17 +1,32 @@
-import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-const validationPipeService = require('@nestts/validation-pipes');
+import { ValidationPipe } from "@nestjs/common";
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
+import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
+import { json } from 'body-parser';
 
 async function bootstrap() {
   try {
-    validationPipeService();
     const app = await NestFactory.create(AppModule);
-    app.useGlobalPipes(new ValidationPipe());
-    await app.listen(3000);
-    console.log(`Application is running on: ${await app.getUrl()}`);
-  } catch(err) {
+    app.useGlobalPipes(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        forbidUnknownValues: true,
+      })
+    );
+    app.use(json({ limit: '2mb' }));
 
-  }
+    const config = new DocumentBuilder()
+      .setTitle("Test API")
+      .setDescription("The API description")
+      .setVersion("1.0")
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup("docs", app, document);
+
+    await app.listen(process.env.PORT || 5000);
+  } catch (err) {}
 }
 bootstrap();
